@@ -221,12 +221,13 @@
                                  ((string= type "hg") "hg manifest"))
                            " | xargs grep -nR "
                            (if pattern (concat " --include='" pattern "' ") "")
+                           " -- "
                            (shell-quote-argument re)))
                   (t (concat "cd " root "; egrep -nR --exclude='"
                             *textmate-gf-exclude*
                             "' --include='"
                             incpat
-                            "' "
+                            "' -- "
                             (shell-quote-argument re)
                             " . | grep -vE '"
                             *textmate-gf-exclude*
