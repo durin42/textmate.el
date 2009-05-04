@@ -43,21 +43,3 @@ Configuration
 To ignore additional files in a "project", use textmate-also-ignore in your emacs config.  For example if you had a directory named "gems" and a directory named "bin" that you wanted to ignore, you would add the following to your emacs config:
 
     (textmate-also-ignore "bin|gems")
-
-Rave Reviews
-============
-
-![DaysAreMade](http://img.skitch.com/20081125-mgwafnkj3cku5dwqukqns57eus.png)
-![SoFarSoAwesome](http://img.skitch.com/20081125-m2snw6s36eh7aifc3dh6acxk72.png)
-![ReallyGreat](http://img.skitch.com/20081126-pk4qt8itb1482y7kg963af2aj1.png)
-![MadeMyWeek](http://img.skitch.com/20081128-k6gxswy6hxm5y3airagt8t8d1d.png)
-![ItRules](http://img.skitch.com/20081203-bbeenfrq885wy6xkxapirgujk3.png)
-![Baberaham](http://img.skitch.com/20081203-gi3w2adibmadrjtxqe6txw95eb.png)
-![TextMade](http://img.skitch.com/20081203-cm6j9n9drcdkhx4sr36b287jbt.png)
-![KeepOnTruckin](http://img.skitch.com/20081210-uby8x9uqfrsccy5jm96rhnkkt.png)
-![DontMissIt](http://img.skitch.com/20081127-g77d1iy86nu1wdi7y8amhd6ixy.png)
-
-Author
-======
-
-    Chris Wanstrath // chris@ozmm.org
