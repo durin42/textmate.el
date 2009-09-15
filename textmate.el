@@ -79,6 +79,10 @@
 (defvar *textmate-gf-exclude*
   "/\\.|vendor|fixtures|tmp|log|build|\\.xcodeproj|\\.nib|\\.framework|\\.app|\\.pbproj|\\.pbxproj|\\.xcode|\\.xcodeproj|\\.bundle")
 
+(defvar *textmate-vcs-exclude* nil
+  "string to give to grep -V to exclude some VCS paths from being grepped."
+  )
+
 (defvar *textmate-keybindings-list* `((textmate-next-line
                                      [A-return]    [M-return])
                                      (textmate-clear-cache
@@ -219,6 +223,9 @@
                            " ; "
                            (cond ((string= type "git") "git ls-files")
                                  ((string= type "hg") "hg manifest"))
+                           (if *textmate-vcs-exclude*
+                               (concat " | grep -v " (shell-quote-argument *textmate-vcs-exclude*))
+                             "")
                            " | xargs grep -nR "
                            (if pattern (concat " --include='" pattern "' ") "")
                            " -- "
