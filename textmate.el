@@ -311,7 +311,7 @@
    ((equal (textmate-project-root) (car *textmate-project-files*))
     (cdr *textmate-project-files*))
    (t (cdr (setq *textmate-project-files*
-                 `(,root . ,(textmate-project-files root)))))))
+                 `(,root . ,(textmate-project-files-find root)))))))
 
 (defun textmate-project-root ()
   (when (or
