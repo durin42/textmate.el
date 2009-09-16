@@ -1,13 +1,13 @@
 ;; textmate.el --- TextMate minor mode for Emacs
 
-;; Copyright (C) 2008 Chris Wanstrath <chris@ozmm.org>
+;; Copyright (C) 2008 Chris Wanstrath <chris@ozmm.org> and others
 
 ;; Licensed under the same terms as Emacs.
 
 ;; Version: 0.1.0
 ;; Keywords: textmate osx mac
 ;; Created: 22 Nov 2008
-;; Author: Chris Wanstrath <chris@ozmm.org>
+;; Author: Chris Wanstrath <chris@ozmm.org> and others
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -25,7 +25,9 @@
 ;;  ⌥⌘] - Align Assignments
 ;;  ⌥⌘[ - Indent Line
 ;;  ⌘RET - Insert Newline at Line's End
-;;  ⌥⌘T - Reset File Cache (for Go to File, cache unused if using git/hg root)
+;;  ⌥⌘T - Reset File Cache (for Go to File, cache unused if using git/hg root,
+;;                           but resets cached root location, useful if roots
+;;                           are nested)
 
 ;; A "project" in textmate-mode is determined by the presence of
 ;; a .git directory. If no .git directory is found in your current
@@ -121,6 +123,7 @@
 
 (defvar *textmate-project-root* nil)
 (defvar *textmate-project-files* '())
+
 (defvar *textmate-gf-exclude*
   "/\\.|vendor|fixtures|tmp|log|build|\\.xcodeproj|\\.nib|\\.framework|\\.app|\\.pbproj|\\.pbxproj|\\.xcode|\\.xcodeproj|\\.bundle|\\.pyc")
 
@@ -130,13 +133,6 @@
 (defvar *textmate-vcs-exclude* nil
   "string to give to grep -V to exclude some VCS paths from being grepped."
   )
-
-(defvar *textmate-project-root-p*
-  #'(lambda (coll) (or (member ".git" coll)
-                       (member ".hg" coll)
-                       ))
-  "*Lambda that, given a collection of directory entries, returns
-  non-nil if it represents the project root.")
 
 (defvar *textmate-find-in-project-default* nil)
 
@@ -331,11 +327,6 @@ Symbols matching the text at point are put first in the completion list."
             )))))
 
 ;;; Utilities
-
-(defun textmate-also-ignore (pattern)
-  "Also ignore PATTERN in project files."
-  (setq *textmate-gf-exclude*
-    (concat *textmate-gf-exclude* "|" pattern)))
 
 (defun textmate-project-root-type (root)
   (cond ((member ".git" (directory-files root)) "git")

@@ -2,8 +2,8 @@ TextMate Minor Mode
 ===================
 
     ;; This minor mode exists to mimick TextMate's awesome
-    ;; features. 
-    
+    ;; features.
+
     ;;    ⌘T - Go to File
     ;;  ⇧⌘T - Go to Symbol
     ;;    ⌘L - Go to Line
@@ -13,14 +13,17 @@ TextMate Minor Mode
     ;;  ⌥⌘] - Align Assignments
     ;;  ⌥⌘[ - Indent Line
     ;;  ⌘RET - Insert Newline at Line's End
-    
+    ;;  ⌥⌘T - Reset File Cache (for Go to File, cache unused if using git/hg root,
+    ;;                           but resets cached root location, useful if roots
+    ;;                           are nested)
+
     ;; A "project" in textmate-mode is determined by the presence of
     ;; a .git directory. If no .git directory is found in your current
     ;; directory, textmate-mode will traverse upwards until one (or none)
     ;; is found. The directory housing the .git directory is presumed
     ;; to be the project's root.
-    
-    ;; In other words, calling Go to File from 
+
+    ;; In other words, calling Go to File from
     ;; ~/Projects/fieldrunners/app/views/towers/show.html.erb will use
     ;; ~/Projects/fieldrunners/ as the root if ~/Projects/fieldrunners/.git
     ;; exists.
@@ -37,9 +40,6 @@ In your emacs config:
     (require 'textmate)
     (textmate-mode)
 
-Configuration
-=============
+See the file for more configuration options.
 
-To ignore additional files in a "project", use textmate-also-ignore in your emacs config.  For example if you had a directory named "gems" and a directory named "bin" that you wanted to ignore, you would add the following to your emacs config:
 
-    (textmate-also-ignore "bin|gems")
