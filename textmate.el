@@ -11,8 +11,6 @@
 
 ;; This file is NOT part of GNU Emacs.
 
-;; Licensed under the same terms as Emacs.
-
 ;;; Commentary:
 
 ;; This minor mode exists to mimick TextMate's awesome
@@ -22,8 +20,8 @@
 ;;  ⇧⌘T - Go to Symbol
 ;;    ⌘L - Go to Line
 ;;    ⌘/ - Comment Line (or Selection/Region)
-;;    ⌘] - Shift Right (currently indents region)
-;;    ⌘[ - Shift Left  (not yet implemented)
+;;    ⌘] - Shift Right
+;;    ⌘[ - Shift Left
 ;;  ⌥⌘] - Align Assignments
 ;;  ⌥⌘[ - Indent Line
 ;;  ⌘RET - Insert Newline at Line's End
@@ -54,6 +52,10 @@
 ;;; Depends on imenu
 (require 'imenu)
 
+;;; Needed for flet
+(eval-when-compile
+  (require 'cl))
+
 ;;; Minor mode
 
 (defvar textmate-use-file-cache t
@@ -73,34 +75,61 @@
     (none ,(lambda (a) ())))
   "The list of functions to enable and disable completing minor modes")
 
-(defvar *textmate-mode-map* (make-sparse-keymap))
+(defvar *textmate-mode-map*
+  (let ((map (make-sparse-keymap)))
+    (cond ((featurep 'aquamacs)
+           (define-key map [A-return] 'textmate-next-line)
+           (define-key map (kbd "A-M-t") 'textmate-clear-cache)
+           (define-key map (kbd "A-M-]") 'align)
+           (define-key map (kbd "A-M-[") 'indent-according-to-mode)
+           (define-key map (kbd "A-]")  'textmate-shift-right)
+           (define-key map (kbd "A-[") 'textmate-shift-left)
+           (define-key map (kbd "A-/") 'comment-or-uncomment-region-or-line)
+           (define-key map (kbd "A-t") 'textmate-goto-file)
+           (define-key map (kbd "A-T") 'textmate-goto-symbol))
+          ((and (featurep 'mac-carbon) (eq window-system 'mac) mac-key-mode)
+           (define-key map [(alt meta return)] 'textmate-next-line)
+           (define-key map [(alt meta t)] 'textmate-clear-cache)
+           (define-key map [(alt meta \])] 'align)
+           (define-key map [(alt meta \[)] 'indent-according-to-mode)
+           (define-key map [(alt \])]  'textmate-shift-right)
+           (define-key map [(alt \[)] 'textmate-shift-left)
+           (define-key map [(meta /)] 'comment-or-uncomment-region-or-line)
+           (define-key map [(alt t)] 'textmate-goto-file)
+           (define-key map [(alt shift t)] 'textmate-goto-symbol))
+          ((featurep 'ns)  ;; Emacs.app
+           (define-key map [(super meta return)] 'textmate-next-line)
+           (define-key map [(super meta t)] 'textmate-clear-cache)
+           (define-key map [(super meta \])] 'align)
+           (define-key map [(super meta \[)] 'indent-according-to-mode)
+           (define-key map [(super \])]  'textmate-shift-right)
+           (define-key map [(super \[)] 'textmate-shift-left)
+           (define-key map [(super /)] 'comment-or-uncomment-region-or-line)
+           (define-key map [(super t)] 'textmate-goto-file)
+           (define-key map [(super shift t)] 'textmate-goto-symbol))
+          (t ;; Any other version
+           (define-key map [(meta return)] 'textmate-next-line)
+           (define-key map [(control c)(control t)] 'textmate-clear-cache)
+           (define-key map [(control c)(control a)] 'align)
+           (define-key map [(control tab)] 'textmate-shift-right)
+           (define-key map [(control shift tab)] 'textmate-shift-left)
+           (define-key map [(control c)(control k)] 'comment-or-uncomment-region-or-line)
+           (define-key map [(meta t)] 'textmate-goto-file)
+           (define-key map [(meta shift t)] 'textmate-goto-symbol)))
+          map))
+
+
 (defvar *textmate-project-root* nil)
 (defvar *textmate-project-files* '())
 (defvar *textmate-gf-exclude*
-  "/\\.|vendor|fixtures|tmp|log|build|\\.xcodeproj|\\.nib|\\.framework|\\.app|\\.pbproj|\\.pbxproj|\\.xcode|\\.xcodeproj|\\.bundle")
+  "/\\.|vendor|fixtures|tmp|log|build|\\.xcodeproj|\\.nib|\\.framework|\\.app|\\.pbproj|\\.pbxproj|\\.xcode|\\.xcodeproj|\\.bundle|\\.pyc")
+
+(defvar *textmate-project-roots*
+  '(".git" ".hg" "Rakefile" "Makefile" "README" "build.xml"))
 
 (defvar *textmate-vcs-exclude* nil
   "string to give to grep -V to exclude some VCS paths from being grepped."
   )
-
-(defvar *textmate-keybindings-list* `((textmate-next-line
-                                     [A-return]    [M-return])
-                                     (textmate-clear-cache
-                                      ,(kbd "A-M-t") [(control c)(control t)])
-                                     (align
-                                      ,(kbd "A-M-]") [(control c)(control a)])
-                                     (indent-according-to-mode
-                                      ,(kbd "A-M-[") nil)
-                                     (indent-region
-                                      ,(kbd "A-]")   [(control tab)])
-                                     (comment-or-uncomment-region-or-line
-                                      ,(kbd "A-/")   [(control c)(control k)])
-                                     (textmate-goto-file
-                                      ,(kbd "A-t")   [(meta t)])
-                                     (textmate-goto-symbol
-                                      ,(kbd "A-T")   [(meta T)])
-                                     (textmate-toggle-camel-case
-                                      ,(kbd "C-_")   [(control _)])))
 
 (defvar *textmate-project-root-p*
   #'(lambda (coll) (or (member ".git" coll)
@@ -110,6 +139,7 @@
   non-nil if it represents the project root.")
 
 (defvar *textmate-find-in-project-default* nil)
+
 (defvar *textmate-find-in-project-type-default* nil)
 
 ;;; Bindings
@@ -119,25 +149,33 @@
   (define-key ido-completion-map [up] 'ido-prev-match)
   (define-key ido-completion-map [down] 'ido-next-match))
 
-(defun textmate-bind-keys ()
-  (add-hook 'ido-setup-hook 'textmate-ido-fix)
-
-  ; weakness until i figure out how to do this right
-  (when (boundp 'osx-key-mode-map)
-    (define-key osx-key-mode-map (kbd "A-t") 'textmate-goto-file)
-    (define-key osx-key-mode-map (kbd "A-T") 'textmate-goto-symbol))
-
-  (let ((member) (i 0) (access (if (boundp 'aquamacs-version) 'cadr 'caddr)))
-    (setq member (nth i *textmate-keybindings-list*))
-    (while member
-      (if (funcall access member)
-       (define-key *textmate-mode-map* (funcall access member) (car member)))
-      (setq member (nth i *textmate-keybindings-list*))
-      (setq i (+ i 1)))))
-
 (defun textmate-completing-read (&rest args)
   (let ((reading-fn (cadr (assoc textmate-completing-library *textmate-completing-function-alist*))))
   (apply (symbol-function reading-fn) args)))
+
+;;; allow-line-as-region-for-function adds an "-or-line" version of
+;;; the given comment function which (un)comments the current line is
+;;; the mark is not active.  This code comes from Aquamac's osxkeys.el
+;;; and is licensed under the GPL
+
+(defmacro allow-line-as-region-for-function (orig-function)
+`(defun ,(intern (concat (symbol-name orig-function) "-or-line"))
+   ()
+   ,(format "Like `%s', but acts on the current line if mark is not active." orig-function)
+   (interactive)
+   (if mark-active
+       (call-interactively (function ,orig-function))
+     (save-excursion
+       ;; define a region (temporarily) -- so any C-u prefixes etc. are preserved.
+       (beginning-of-line)
+       (set-mark (point))
+       (end-of-line)
+       (call-interactively (function ,orig-function))))))
+
+(defun textmate-define-comment-line ()
+  "Add or-line (un)comment function if not already defined"
+  (unless (fboundp 'comment-or-uncomment-region-or-line)
+    (allow-line-as-region-for-function comment-or-uncomment-region)))
 
 ;;; Commands
 
@@ -193,7 +231,11 @@ Symbols matching the text at point are put first in the completion list."
   (interactive)
   (let ((root (textmate-project-root)))
     (when (null root)
-      (error "Can't find any .git directory"))
+      (error
+       (concat
+        "Can't find a sutiable project root ("
+        (string-join " " *textmate-project-roots* )
+        ")")))
     (find-file
      (concat
       (expand-file-name root) "/"
@@ -342,18 +384,46 @@ Symbols matching the text at point are put first in the completion list."
         (setq *textmate-project-root* nil))))
   *textmate-project-root*)
 
+(defun root-match(root names)
+        (member (car names) (directory-files root)))
+
+(defun root-matches(root names)
+        (if (root-match root names)
+                        (root-match root names)
+                        (if (eq (length (cdr names)) 0)
+                                        'nil
+                                        (root-matches root (cdr names))
+                                        )))
+
 (defun textmate-find-project-root (&optional root)
   (when (null root) (setq root default-directory))
   (cond
-   ((funcall *textmate-project-root-p* (directory-files root))
-    (expand-file-name root))
+   ((root-matches root *textmate-project-roots*)
+                (expand-file-name root))
    ((equal (expand-file-name root) "/") nil)
    (t (textmate-find-project-root (concat (file-name-as-directory root) "..")))))
+
+(defun textmate-shift-right (&optional arg)
+  "Shift the line or region to the ARG places to the right.
+
+A place is considered `tab-width' character columns."
+  (interactive)
+  (let ((deactivate-mark nil)
+        (beg (or (and mark-active (region-beginning))
+                 (line-beginning-position)))
+        (end (or (and mark-active (region-end)) (line-end-position))))
+    (indent-rigidly beg end (* (or arg 1) tab-width))))
+
+(defun textmate-shift-left (&optional arg)
+  "Shift the line or region to the ARG places to the left."
+  (interactive)
+  (textmate-shift-right (* -1 (or arg 1))))
 
 ;;;###autoload
 (define-minor-mode textmate-mode "TextMate Emulation Minor Mode"
   :lighter " mate" :global t :keymap *textmate-mode-map*
-  (textmate-bind-keys)
+  (add-hook 'ido-setup-hook 'textmate-ido-fix)
+  (textmate-define-comment-line)
   ; activate preferred completion library
   (dolist (mode *textmate-completing-minor-mode-alist*)
     (if (eq (car mode) textmate-completing-library)
