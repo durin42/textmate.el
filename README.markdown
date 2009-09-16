@@ -42,4 +42,12 @@ In your emacs config:
 
 See the file for more configuration options.
 
+Authors
+======
 
+    Adam Glasgall // adam@dropio.com
+    Augie Fackler // durin42@gmail.com
+    Carl Porth // badcarl@gmail.com
+    Chris Wanstrath // chris@ozmm.org
+    Federico Builes // federico.builes@gmail.com
+    Nick Sieger // nick@nicksieger.com
