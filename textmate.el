@@ -252,42 +252,44 @@ in a grep-mode buffer."
     (setq *textmate-find-in-project-type-default* pat)
     (textmate-find-in-project (concat "*." pat))))
 
-(defun textmate-find-in-project (&optional pattern)
-  (interactive)
-  (let ((root (textmate-project-root))
-        (default *textmate-find-in-project-default*)
-        )
+(defun textmate-start-compile-in-root (command &optional mode
+                                                         name-function
+                                                         highlight-regexp)
+  "Idential to compilation-start, except it automatically changes to the
+project root directory before starting the command."
+  (let ((root (textmate-project-root)))
     (when (null root)
       (error "Not in a project area."))
-    (let ((re (read-string (concat "Search for "
+    (let ((realcommand (concat "cd " root " ; " command)))
+      (compilation-start realcommand mode name-function highlight-regexp))))
+
+(defun textmate-find-in-project (&optional pattern)
   "Run grep over project files with results in grep-mode.
 
 Takes an optional argument (see also textmate-find-in-project-type)
 of a file extension to limit the search. Useful for finding results in only a
 specific type of file."
+  (interactive)
+    (let* ((default *textmate-find-in-project-default*)
+           (re (read-string (concat "Search for "
                          (if (and default (> (length default) 0))
                              (format "[\"%s\"]" default)) ": ")
-                 nil 'textmate-find-in-project-history default)
-              )
-          (incpat (if pattern pattern "*")))
-      (append textmate-find-in-project-history (list re))
-      (setq *textmate-find-in-project-default* re)
-      (let ((type (textmate-project-root-type root)))
-        (let ((command
-            (cond ((not (string= type "unknown"))
-                   (concat "cd "
-                           root
-                           " ; "
-                           (cond ((string= type "git") "git ls-files")
+                 nil 'textmate-find-in-project-history default))
+          (incpat (if pattern pattern "*"))
+          (type (textmate-project-root-type (textmate-project-root)))
+          (command
+           (cond ((not (string= type "unknown"))
+                   (concat (cond ((string= type "git") "git ls-files")
                                  ((string= type "hg") "hg manifest"))
                            (if *textmate-vcs-exclude*
-                               (concat " | grep -v " (shell-quote-argument *textmate-vcs-exclude*))
+                               (concat " | grep -v "
+                                       (shell-quote-argument *textmate-vcs-exclude*))
                              "")
                            " | xargs grep -nR "
                            (if pattern (concat " --include='" pattern "' ") "")
                            " -- "
                            (shell-quote-argument re)))
-                  (t (concat "cd " root "; egrep -nR --exclude='"
+                  (t (concat "egrep -nR --exclude='"
                             *textmate-gf-exclude*
                             "' --include='"
                             incpat
@@ -297,8 +299,8 @@ specific type of file."
                             *textmate-gf-exclude*
                             "' | sed s:./::"
                             )))))
-                  (compilation-start command 'grep-mode)))
-  )))
+          (setq *textmate-find-in-project-default* re)
+          (textmate-start-compile-in-root command 'grep-mode)))
 
 (defun textmate-clear-cache ()
   (interactive)
