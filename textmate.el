@@ -138,6 +138,8 @@
 
 (defvar *textmate-find-in-project-type-default* nil)
 
+(defvar *textmate-compile-default* nil)
+
 ;;; Bindings
 
 (defun textmate-ido-fix ()
@@ -262,6 +264,17 @@ project root directory before starting the command."
       (error "Not in a project area."))
     (let ((realcommand (concat "cd " root " ; " command)))
       (compilation-start realcommand mode name-function highlight-regexp))))
+
+(defun textmate-compile ()
+  "Run a command in compilation-mode rooted at the project root."
+  (interactive)
+  (let* ((default *textmate-compile-default*)
+         (command (read-string
+                   (concat "Command"
+                           (if default (format " [\"%s\"]" default) "")
+                           ": ") nil 'textmate-compile-history default)))
+    (setq *textmate-compile-default* command)
+    (textmate-start-compile-in-root command)))
 
 (defun textmate-find-in-project (&optional pattern)
   "Run grep over project files with results in grep-mode.
