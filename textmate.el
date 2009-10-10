@@ -240,6 +240,8 @@ Symbols matching the text at point are put first in the completion list."
        (textmate-project-files root))))))
 
 (defun textmate-find-in-project-type ()
+  "Run grep over project files of a specific type and put the results
+in a grep-mode buffer."
   (interactive)
   (let ((pat (read-string (concat "Suffix"
                                   (if *textmate-find-in-project-type-default*
@@ -258,6 +260,11 @@ Symbols matching the text at point are put first in the completion list."
     (when (null root)
       (error "Not in a project area."))
     (let ((re (read-string (concat "Search for "
+  "Run grep over project files with results in grep-mode.
+
+Takes an optional argument (see also textmate-find-in-project-type)
+of a file extension to limit the search. Useful for finding results in only a
+specific type of file."
                          (if (and default (> (length default) 0))
                              (format "[\"%s\"]" default)) ": ")
                  nil 'textmate-find-in-project-history default)
