@@ -18,10 +18,29 @@ TextMate Minor Mode
     ;;                           are nested)
 
     ;; A "project" in textmate-mode is determined by the presence of
-    ;; a .git directory. If no .git directory is found in your current
-    ;; directory, textmate-mode will traverse upwards until one (or none)
-    ;; is found. The directory housing the .git directory is presumed
-    ;; to be the project's root.
+    ;; a .git directory, an .hg directory, a Rakefile, or a Makefile.
+
+    ;; You can configure what makes a project root by appending a file
+    ;; or directory name onto the `*textmate-project-roots*' list.
+
+    ;; If no project root indicator is found in your current directory,
+    ;; textmate-mode will traverse upwards until one (or none) is found.
+    ;; The directory housing the project root indicator (e.g. a .git or .hg
+    ;; directory) is presumed to be the project's root.
+
+    ;; In the event that the project root was defined by either .git or .hg,
+    ;; fast file-listing with no caching is provided by the version control
+    ;; system.
+
+    ;; Not bound to keys, but available are textmate-find-in-project and
+    ;; textmate-find-in-project-type, which use grep, the file listing,
+    ;; and grep-mode to provide excellent (and blindingly fast with git and
+    ;; hg!) grep integration with emacs and your project.
+
+    ;; Also available (and unbound) is textmate-compile, which is like
+    ;; compile but prepends a cd to the project root to the command. It is
+    ;; used to build the find-in-project commands, but has other possible
+    ;; uses as well (eg, a test runner or some kind of compile command).
 
     ;; In other words, calling Go to File from
     ;; ~/Projects/fieldrunners/app/views/towers/show.html.erb will use

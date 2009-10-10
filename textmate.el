@@ -44,6 +44,20 @@
 ;; ~/Projects/fieldrunners/ as the root if ~/Projects/fieldrunners/.git
 ;; exists.
 
+;; In the event that the project root was defined by either .git or .hg,
+;; fast file-listing with no caching is provided by the version control
+;; system.
+
+;; Not bound to keys, but available are textmate-find-in-project and
+;; textmate-find-in-project-type, which use grep, the file listing,
+;; and grep-mode to provide excellent (and blindingly fast with git and
+;; hg!) grep integration with emacs and your project.
+
+;; Also available (and unbound) is textmate-compile, which is like
+;; compile but prepends a cd to the project root to the command. It is
+;; used to build the find-in-project commands, but has other possible
+;; uses as well (eg, a test runner or some kind of compile command).
+
 ;;; Installation
 
 ;; $ cd ~/.emacs.d/vendor
