@@ -326,7 +326,7 @@ specific type of file."
                                (concat " | grep -v "
                                        (shell-quote-argument *textmate-vcs-exclude*))
                              "")
-                           " | xargs grep -nR "
+                           " | xargs egrep -nR "
                            (if pattern (concat " --include='" pattern "' ") "")
                            " -- "
                            (shell-quote-argument re)))
