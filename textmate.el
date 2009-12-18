@@ -18,6 +18,7 @@
 ;;    ⌘T - Go to File
 ;;  ⇧⌘T - Go to Symbol
 ;;    ⌘L - Go to Line
+;;  ⇧⌘L - Select Line (or expand Selection to select lines)
 ;;    ⌘/ - Comment Line (or Selection/Region)
 ;;    ⌘] - Shift Right
 ;;    ⌘[ - Shift Left
@@ -114,6 +115,7 @@ completing filenames and symbols (`ido' by default)")
            (define-key map (kbd "A-]")  'textmate-shift-right)
            (define-key map (kbd "A-[") 'textmate-shift-left)
            (define-key map (kbd "A-/") 'comment-or-uncomment-region-or-line)
+           (define-key map (kbd "A-L") 'textmate-select-line)
            (define-key map (kbd "A-t") 'textmate-goto-file)
            (define-key map (kbd "A-T") 'textmate-goto-symbol))
           ((and (featurep 'mac-carbon) (eq window-system 'mac) mac-key-mode)
@@ -125,6 +127,7 @@ completing filenames and symbols (`ido' by default)")
            (define-key map [(alt \[)] 'textmate-shift-left)
            (define-key map [(meta /)] 'comment-or-uncomment-region-or-line)
            (define-key map [(alt t)] 'textmate-goto-file)
+           (define-key map [(alt shift l)] 'textmate-select-line)
            (define-key map [(alt shift t)] 'textmate-goto-symbol))
           ((featurep 'ns)  ;; Emacs.app
            (define-key map [(super meta return)] 'textmate-next-line)
@@ -135,6 +138,7 @@ completing filenames and symbols (`ido' by default)")
            (define-key map [(super \[)] 'textmate-shift-left)
            (define-key map [(super /)] 'comment-or-uncomment-region-or-line)
            (define-key map [(super t)] 'textmate-goto-file)
+           (define-key map [(super shift l)] 'textmate-select-line)
            (define-key map [(super shift t)] 'textmate-goto-symbol))
           (t ;; Any other version
            (define-key map [(meta return)] 'textmate-next-line)
@@ -144,6 +148,7 @@ completing filenames and symbols (`ido' by default)")
            (define-key map [(control shift tab)] 'textmate-shift-left)
            (define-key map [(control c)(control k)] 'comment-or-uncomment-region-or-line)
            (define-key map [(meta t)] 'textmate-goto-file)
+           (define-key map [(meta shift l)] 'textmate-select-line)
            (define-key map [(meta shift t)] 'textmate-goto-symbol)))
           map))
 
@@ -209,6 +214,33 @@ function."
   (end-of-line)
   (newline-and-indent))
 
+(defun textmate-select-line ()
+  "If the mark is not active, select the current line.
+Otherwise, expand the current region to select the lines the region touches."
+  (interactive)
+  (if mark-active ;; expand the selection to select lines
+      (let ((top (= (point) (region-beginning)))
+            (p1 (region-beginning))
+            (p2 (region-end)))
+        (goto-char p1)
+        (beginning-of-line)
+        (push-mark (point))
+        (goto-char p2)
+        (unless (looking-back "\n")
+          (progn
+            (end-of-line)
+            (if (< (point) (point-max)) (forward-char))))
+        (setq mark-active t
+              transient-mark-mode t)
+        (if top (exchange-point-and-mark)))
+    (progn
+      (beginning-of-line)
+      (push-mark (point))
+      (end-of-line)
+      (if (< (point) (point-max)) (forward-char))
+      (setq mark-active t
+            transient-mark-mode t))))
+
 ;; http://chopmo.blogspot.com/2008/09/quickly-jumping-to-symbols.html
 (defun textmate-goto-symbol ()
   "Update the imenu index and then use ido to select a symbol to navigate to.
@@ -250,7 +282,7 @@ Symbols matching the text at point are put first in the completion list."
                   matching-symbols)))))
     (let* ((selected-symbol (ido-completing-read "Symbol? " symbol-names))
            (position (cdr (assoc selected-symbol name-and-pos))))
-      (goto-char position))))
+      (goto-char (if (overlayp position) (overlay-start position) position)))))
 
 (defun textmate-goto-file ()
   "Uses your completing read to quickly jump to a file in a project."
