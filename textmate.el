@@ -423,7 +423,8 @@ specific type of file."
   "Returns the current project root."
   (when (or
          (null *textmate-project-root*)
-         (not (string-match *textmate-project-root* default-directory)))
+         (not (string-match *textmate-project-root* default-directory))
+         (not (string-match *textmate-project-root* (getenv "HOME"))))
     (let ((root (textmate-find-project-root)))
       (if root
           (setq *textmate-project-root* (expand-file-name (concat root "/")))
